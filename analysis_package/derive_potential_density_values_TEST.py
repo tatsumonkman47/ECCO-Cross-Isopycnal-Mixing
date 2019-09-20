@@ -56,20 +56,6 @@ def make_potential_density_dataset(PHIHYD_ds_raw, SALT_ds_raw, THETA_ds_raw, tim
 
 	"""
 
-
-	#RHOAnoma_ds_raw = open_datasets.open_combine_raw_ECCO_tile_files(data_dir, RHOAnoma_var_str, time_slice)
-	#PHIHYD_ds_raw = open_datasets.open_combine_raw_ECCO_tile_files(data_dir, PHIHYD_var_str, time_slice)
-	#SALT_ds_raw = open_datasets.open_combine_raw_ECCO_tile_files(data_dir, SALT_var_str, time_slice)
-	#THETA_ds_raw = open_datasets.open_combine_raw_ECCO_tile_files(data_dir, THETA_var_str, time_slice)
-
-	#RHOAnoma_ds_raw = xr.open_dataset("RHOAnoma_ds_raw.nc")
-	#PHIHYD_ds_raw = xr.open_dataset("PHIHYD_ds_raw.nc")
-	#SALT_ds_raw = xr.open_dataset("SALT_ds_raw.nc")
-	#THETA_ds_raw = xr.open_dataset("THETA_ds_raw.nc")
-
-	# resize data arrays to get rid of nan padding on the final index
-	#RHOAnoma_ds = RHOAnoma_ds_raw.isel(i=slice(0,90),j=slice(0,90),k=slice(0,50))
-	#RHOAnoma_ds.load()	
 	PHIHYD_ds = PHIHYD_ds_raw#.isel(i=slice(0,90),j=slice(0,90),k=slice(0,50))
 	PHIHYD_ds.load()
 	SALT_ds = SALT_ds_raw#.isel(i=slice(0,90),j=slice(0,90),k=slice(0,50))
@@ -77,19 +63,16 @@ def make_potential_density_dataset(PHIHYD_ds_raw, SALT_ds_raw, THETA_ds_raw, tim
 	THETA_ds = THETA_ds_raw#.isel(i=slice(0,90),j=slice(0,90),k=slice(0,50))
 	THETA_ds.load()
 
-
 	# create arrays for intermediate variables
 	P_INSITU_ds = PHIHYD_ds.copy(deep=True)*0
 	P_INSITU_ds.load()
 	P_INSITU_ds = P_INSITU_ds.rename(name_dict={"PHIHYD":"P_INSITU"})
 
-	
 	P_INSITU_ds["P_INSITU"] = (PHIHYD_ds["PHIHYD"]*(REFERENCE_DENSITY) + G_ACCELERATION*REFERENCE_DENSITY*PHIHYD_ds["dep"])*PA_TO_DBAR
 
-
-	TEMP_INSITU_ds = PHIHYD_ds.copy(deep=True)
-	TEMP_INSITU_ds.load()
-	TEMP_INSITU_ds = TEMP_INSITU_ds.rename(name_dict={"PHIHYD":"TEMP_INSITU"})
+	T_INSITU_ds = PHIHYD_ds.copy(deep=True)
+	T_INSITU_ds.load()
+	T_INSITU_ds = T_INSITU_ds.rename(name_dict={"PHIHYD":"T_INSITU"})
 
 	PDENS_ds = PHIHYD_ds.copy(deep=True)
 	PDENS_ds.load()
@@ -101,18 +84,16 @@ def make_potential_density_dataset(PHIHYD_ds_raw, SALT_ds_raw, THETA_ds_raw, tim
                                 			 P_INSITU_ds.P_INSITU)
 
 	if "time" and "tile" in PHIHYD_ds.dims:
-		TEMP_INSITU_ds["TEMP_INSITU"] = (["tile","time","k","j","i"], insitu_temperature)
+		T_INSITU_ds["T_INSITU"] = (["tile","time","k","j","i"], insitu_temperature)
 	elif "tile" in PHIHYD_ds.dims:
-		TEMP_INSITU_ds["TEMP_INSITU"] = (["tile","k","j","i"], insitu_temperature)
+		T_INSITU_ds["T_INSITU"] = (["tile","k","j","i"], insitu_temperature)
 	elif "time" in PHIHYD_ds.dims:
-		TEMP_INSITU_ds["TEMP_INSITU"] = (["time","k","j","i"], insitu_temperature)
+		T_INSITU_ds["T_INSITU"] = (["time","k","j","i"], insitu_temperature)
 	else:
-		TEMP_INSITU_ds["TEMP_INSITU"] = (["k","j","i"], insitu_temperature)
-	#print("TEMP_INSITU_ds.max(): ", TEMP_INSITU_ds.max(), "degrees C")
-	#print("TEMP_INSITU_ds.min(): ", TEMP_INSITU_ds.min(), "degrees C")
+		T_INSITU_ds["T_INSITU"] = (["k","j","i"], insitu_temperature)
 	# derive potential density
 	insitu_potential_density = seawater.eos80.pden(SALT_ds.SALT,
-	                                				TEMP_INSITU_ds.TEMP_INSITU,
+	                                				T_INSITU_ds.T_INSITU,
 	                                				P_INSITU_ds["P_INSITU"],
 	                                				pr=ref_pressure)
 	# should probably change some of the units and attributes and stuff..
@@ -138,8 +119,5 @@ def make_potential_density_dataset(PHIHYD_ds_raw, SALT_ds_raw, THETA_ds_raw, tim
 		print("Saved potential density data for timesteps " + str(time_slice[0]) 
 			  + " to " + str(time_slice[-1]) + " to file " + str(fname))
 
-	
-	# interpolate onto west and south faces
-
-	return PDENS_ds, P_INSITU_ds, TEMP_INSITU_ds
+	return PDENS_ds, P_INSITU_ds, T_INSITU_ds
 

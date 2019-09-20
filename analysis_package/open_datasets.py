@@ -11,7 +11,7 @@ GM_PSIX_var = "GM_PsiX"
 GM_PSIY_var = "GM_PsiY"
 
 
-def open_combine_raw_ECCO_tile_files(path,VAR,time_slice,rename_indices=True):
+def open_combine_raw_ECCO_tile_files(path,VAR,time_slice=np.arange(0,288),rename_indices=True):
 	""" Open and combine individual tile files for an xmitgcm dataset and return a complete dataset 
 	will probably remove grid assignment to make this function more general..
 	I am not adding in a grid for now since merging datasets is pretty computationally intensive.
