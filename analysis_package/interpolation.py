@@ -1,3 +1,6 @@
+import numpy as np 
+import xarray as xr
+
 def interpolate_c_to_v(data_array,grid):
     # need to interpolate between c values and corresponding values shifted downwards one cell unit
     # in the v direction
@@ -45,8 +48,10 @@ def interpolate_c_to_v(data_array,grid):
 
 
 def interpolate_c_to_u(data_array,grid):
-    # need to interpolate between c values and corresponding values shifted downwards one cell unit
-    # in the v direction
+    """
+
+    Parameters
+    """
     print("checkpoint 1")
     interpolated_u_data = data_array.copy(deep=True)
     i_distance_between_c_points = data_array.copy(deep=True)*0

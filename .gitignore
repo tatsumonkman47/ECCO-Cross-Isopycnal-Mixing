@@ -6,3 +6,5 @@ overturning_output/
 nctiles_monthly/*
 overturning_output/*
 Potential_Density*.nc
+analysis_datasets/
+analysis_datasets/*
