@@ -11,7 +11,7 @@ GM_PSIX_var = "GM_PsiX"
 GM_PSIY_var = "GM_PsiY"
 
 
-def open_combine_raw_ECCO_tile_files(path,VAR,time_slice=np.arange(0,288),rename_indices=True):
+def open_combine_raw_ECCO_tile_files(path,VAR,time_slice,rename_indices=True):
 	""" Open and combine individual tile files for an xmitgcm dataset and return a complete dataset 
 	will probably remove grid assignment to make this function more general..
 	I am not adding in a grid for now since merging datasets is pretty computationally intensive.
@@ -30,37 +30,42 @@ def open_combine_raw_ECCO_tile_files(path,VAR,time_slice=np.arange(0,288),rename
 	variable_all_tiles: xarray dataset
 		Xarray datset with tile files stacked along 'tile' dimension
 	"""
+
+	# add simple logic to read in climatology
+	decode_times_bool = True
+	if "climatology" in path:
+		time_slice = slice(0,12)
+		decode_times_bool = False
+
 	variable_dir = path+VAR+"/"
 	variable_dict = {}
 	variable_nc_dict = {}
 
 	for i in range(1,14):
 	    if i < 10:
-	        variable_dict["tile_"+str(i)] = xr.open_dataset(variable_dir+VAR+".000"+str(i)+".nc").load()
+	        variable_dict["tile_"+str(i)] = xr.open_dataset(variable_dir+VAR+".000"+str(i)+".nc",decode_times=decode_times_bool).load()
 	    else:
-	        variable_dict["tile_"+str(i)] = xr.open_dataset(variable_dir+VAR+".00"+str(i)+".nc").load()
+	        variable_dict["tile_"+str(i)] = xr.open_dataset(variable_dir+VAR+".00"+str(i)+".nc",decode_times=decode_times_bool).load()
 
 	# rename dimension indicies to match grid dims..
 	# will need to change dimension index names if you load variables that aren't in the middle 
 	# of each grid tile, eg UVELMASS is on the western face of each grid tile wherease 
-	if VAR == "UVELMASS" and rename_indices==True:
+	if VAR == "UVELMASS" and rename_indices==True and "monthly" in path:
 		for tile in variable_dict:
 		    variable_dict[tile] = (variable_dict[tile].rename({"i1":"time", "i2":"k","i3":"j","i4":"i_g"})).isel(time=time_slice)
-	elif VAR == "VVELMASS" and rename_indices==True:
+	elif VAR == "VVELMASS" and rename_indices==True and "monthly" in path:
 		for tile in variable_dict:
 		    variable_dict[tile] = (variable_dict[tile].rename({"i1":"time", "i2":"k","i3":"j_g","i4":"i"})).isel(time=time_slice)
-	elif VAR == "oceFWflx" and rename_indices==True:
+	elif (VAR == "oceFWflx" or VAR == "oceQnet" ) and rename_indices==True and "monthly" in path:
 		for tile in variable_dict:
-		    variable_dict[tile] = (variable_dict[tile].rename({"i1":"time", "i2":"j","i3":"i"})).isel(time=time_slice)
-	elif VAR == "oceQnet" and rename_indices==True:
-		for tile in variable_dict:
-		    variable_dict[tile] = (variable_dict[tile].rename({"i1":"time", "i2":"j","i3":"i"})).isel(time=time_slice)
+		    variable_dict[tile] = (variable_dict[tile].rename({"i1":"time", "i2":"j","i3":"i"})).isel(time=time_slice)		    
 	elif rename_indices==True:
 		for tile in variable_dict:
 		    variable_dict[tile] = (variable_dict[tile].rename({"i1":"time", "i2":"k","i3":"j","i4":"i"})).isel(time=time_slice)
 	else:
 		for tile in variable_dict:
 		    variable_dict[tile] = variable_dict[tile].isel(time=time_slice)
+
 	# combine tiles along new dimension "tile", which is the last argument in this function 
 	variable_all_tiles = xr.concat([variable_dict["tile_1"],variable_dict["tile_2"],variable_dict["tile_3"],
 	                               variable_dict["tile_4"],variable_dict["tile_5"],variable_dict["tile_6"],
